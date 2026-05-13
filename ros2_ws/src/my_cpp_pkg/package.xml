@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>my_cpp_pkg</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="fred@maxkit.com.tw">root</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- 編譯工具依賴：使用 ament_cmake 作為編譯系統 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 軟體包依賴：此專案需要用到 ROS 2 的 C++ 核心庫 -->
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>example_interfaces</depend>
+
+  <!-- 測試依賴：自動化代碼檢查工具 -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <!-- 指定編譯類型為 ament_cmake -->
+    <build_type>ament_cmake</build_type>
+  </export>
+  
+</package>

@@ -1,0 +1,16 @@
+{
+    "name": "ROS 2 Humble Development",
+    "image": "ros:humble",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-iot.vscode-ros",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-python.python",
+                "Google.geminicodeassist"
+            ]
+        }
+    },
+    "remoteUser": "root",
+    "postCreateCommand": "apt-get update && apt-get install -y python3-pip ros-humble-example-interfaces && rosdep update && echo \"source /opt/ros/humble/setup.bash\" >> /root/.bashrc"
+}
