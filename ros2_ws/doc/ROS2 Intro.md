@@ -1,8 +1,9 @@
 ## 1. 什麼是 ROS 2？
 
-- **ROS, Robot Operating System** 
-- 並非管理硬體資源的傳統 OS；而是運作於 Linux 之上的 **通訊框架與開發工具**
-- 主要負責串接硬體（如雷達）與邏輯模組 (Nodes) 間的通訊；由於 ROS 已封裝了底層通訊及驅動等複雜細節，開發者只須專注於邏輯的開發。
+- **ROS, Robot Operating System**
+  - 並非傳統 OS，而是運作於 Linux 之上的**通訊框架與開發工具**。
+  - 封裝底層硬體驅動與通訊細節，提供經模組化的「Node」作為開發架構，讓開發者只需專注於 Node 上的邏輯處理。
+- **ROS2 是第二代**：相較 ROS1 的主從式架構，採用去中心化的點對點通訊協議 (DDS)。
 
 ***
 
@@ -24,7 +25,7 @@
 
 * **ROS 2**
   
-  * **DDS 機制** (資料分發服務，Data Distribution Service)
+  * **DDS 協議** (資料分發服務，Data Distribution Service)
     
     - 核心理念：**去中心化**
       
@@ -43,7 +44,7 @@
 
 ### 2.2 去中心化：分散式決策與點對點通訊
 
-假設**載具 A** 與**載具 B** 準備行駛在同一個軌道交叉口：
+如何做到相互溝通與自行決策？假設**載具 A** 與**載具 B** 準備行駛在同一個軌道交叉口，
 
 * **互相廣播與監聽**
   
@@ -67,11 +68,10 @@
 
 ### 2.4 QoS (服務品質，Quality of Service)
 
-ROS 2 用 QoS 來定義「**資料要如何被傳送**」它不是單一參數，而是一組 **QoS Profile**（設定組合）。
+傳統 TCP 網路一旦中斷，系統常會因試圖補傳資料而卡住。ROS 2 則透過 QoS 來定義「資料要如何被傳送」，讓通訊更具彈性。
 
-- 底層透過 **UDP Multicast** 換取傳輸極速，並根據資料類型選擇最適合的傳輸方式，也就是根據資料的重要程度，決定訊息的品質。
-
-- 有別於 TCP 網路一斷，系統就會卡住並不斷嘗試重連，且試圖補傳剛才斷掉的資料。
+- QoS 不是單一參數，而是一組 **QoS Profile**（設定組合）。
+- 底層透過 **UDP Multicast** 換取傳輸極速，會根據資料的重要程度，選擇最適合的傳輸方式，決定訊息的品質。
 
 #### 2.4.1 QoS Profile 實務常用設定
 
@@ -87,13 +87,37 @@ ROS 2 用 QoS 來定義「**資料要如何被傳送**」它不是單一參數�
 
 ### 3.1 ROS 1 與 ROS 2 的主要差異
 
-| 特性       | ROS 1                                 | ROS 2                             |
-| -------- | ------------------------------------- | --------------------------------- |
-| **通訊架構** | **主從式 (Master-based)**：依賴單一 Master 註冊 | **去中心化 (DDS)**：自動發現機制             |
-| **傳輸協議** | **TCP/UDP**：依賴 Master 媒合連線            | **RTPS (DDS 標準)**：Peer-to-Peer 傳輸 |
-| **即時性**  | **較高延遲**：TCP 重傳可能導致卡頓                 | **極低延遲**：支援 QoS 與零拷貝              |
-| **安全性**  | 明文傳輸，安全性較低                            | **內建 SROS2**：支援 TLS 加密與身分認證       |
-| **網路環境** | 適合穩定的 Ethernet                        | 針對 Wi-Fi、藍牙等不穩定環境優化               |
+| 特性       | ROS 1                             | ROS 2                         |
+| -------- | --------------------------------- | ----------------------------- |
+| **通訊關係** | 星狀拓樸 (所有點連向 Master)               | 網狀拓樸 (Mesh，點對點直接溝通)           |
+| **通訊架構** | 主從式 (Master-based)：依賴單一 Master 註冊 | 去中心化 (DDS)：自動發現機制             |
+| **傳輸協議** | TCP/UDP：依賴 Master 媒合連線            | RTPS (DDS 標準)：Peer-to-Peer 傳輸 |
+| **即時性**  | 較高延遲：TCP 重傳可能導致卡頓                 | 極低延遲：支援 QoS 與零拷貝              |
+| **安全性**  | 明文傳輸，安全性低                         | 內建 SROS2：支援 TLS 加密與身分認證       |
+| **擴展性**  | 困難。裝置越多 Master 負擔極重               | 容易。可輕鬆支援大量裝置（數十至數百個）同時運作      |
+| **網路環境** | 適合穩定的 Ethernet                    | 針對 Wi-Fi、藍牙等不穩定環境優化           |
+
+#### 3.1.1 ROS 1 的歷史定位與侷限
+
+* 應用領域
+  
+  * 主要用於**單一機器人內部通訊**，且環境需為穩定的**有線網路 (Ethernet)** 或實驗室原型開發。
+
+* 選用原因
+  
+  * 早期唯一的機器人標準，有成熟的感測器驅動與演算法生態系。
+
+* 瓶頸
+  
+  * 單點故障：Master 崩潰導致全域通訊失效。
+  * 多機擴展困難：裝置越多 Master 負擔越重。
+  * 通訊脆弱：依賴 TCP，不適合 Wi-Fi 訊號不穩或斷續的移動環境 (如 AGV)。
+  * 安全性：缺乏數據加密。
+  * 即時性：無法滿足即時響應需求。
+
+* 當時解決方案
+  
+  * 早期靠第三方 `multimaster_fkie` 或 `rosbridge` 等外掛工具解決多機同步問題，但同時也增加系統的複雜度與不穩定性。
 
 ### 3.2 通訊架構原理
 
@@ -107,16 +131,15 @@ ROS 2 用 QoS 來定義「**資料要如何被傳送**」它不是單一參數�
 
 #### 3.2.1 Zero-Copy (零拷貝)
 
-此概念應用在「單一主機」內的通訊，也就是案例中單一載具內部的 Node 間的通訊。
+此概念應用在「單一主機」內的通訊，也就是案例中單一載具內部功能單元之間的通訊。
 
 - **ROS 1 的挑戰 (序列化與多次複製)**
   
-  - Node 在同一台電腦運行，預設仍透過本機位址（127.0.0.1）建立 TCP Socket 傳輸。資料需經過序列化並在記憶體間多次搬移，這在傳輸大容量資訊 (如 4K 相機)，會造成嚴重的 CPU 負擔。
-  - 雖然有 `Nodelets` 技術可解決，但使用門檻較高且架構受限。
+  - 多個程式 (Nodes) 在同一台電腦運行，預設仍需透過網路協議 (127.0.0.1) 建立 TCP 連線。資料需經過序列化拆解並在記憶體間多次拷貝搬移，當傳輸大容量資訊 (如 4K 影像) 時，會造成嚴重的 CPU 運算負擔。
 
 - **ROS 2 的原生 Shared Memory**
   
-  - 底層 DDS 原生支援 **Shared Memory (共享記憶體)** 機制。資料不需要離開記憶體去走網路協議棧，而是直接透過「記憶體位址」存取。這讓單機內的數據傳輸幾乎達到「零延時」，是 ROS 2 處理高頻率、大數據流的核心優勢。
+  - 底層 DDS 原生支援 **Shared Memory (共享記憶體)**。資料不需經過網路協議建立通訊管道，也不需要進行資料序列化，直接讓不同程式 (Nodes) 讀取同一塊記憶體區塊。這讓單機內的數據傳輸幾乎達到「零延時」，是 ROS 2 處理高頻率、大數據流的核心優勢。
 
 ### 3.3 ROS 2 核心元件專有名詞
 
@@ -180,17 +203,21 @@ ROS 2 用 QoS 來定義「**資料要如何被傳送**」它不是單一參數�
 
 ## 4. ROS 2 常用 CLI 指令
 
-| 常用指令                                 | 描述                                             | 範例                                                                                             |
-|:------------------------------------ |:---------------------------------------------- |:---------------------------------------------------------------------------------------------- |
-| **`ros2 node list`**                 | 顯示目前所有上線中的 Node (載具)                           |                                                                                                |
-| **`ros2 node info <node>`**          | 查看指定 Node (載具) 提供哪些功能 (Topic, Service, Action) | `ros2 node info /agv_A_node`                                                                   |
-| **`ros2 topic echo <topic>`**        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）    | `ros2 topic echo /agv_A_coord`                                                                 |
-| **`ros2 topic hz <topic>`**          | 檢查資料的更新頻率                                      | `ros2 topic hz /agv_A_coord`                                                                   |
-| **`ros2 topic pub <topic> <type>`**  | **(發布) 手動發送**：模擬發送一筆資料 (如：手動發布座標來測試避障反應)       | `ros2 topic pub /agv_A_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`               |
-| **`ros2 service call <srv> <type>`** | 要求特定 Node (載具)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /agv_A/reboot std_srvs/srv/Trigger`                                         |
-| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                           | `ros2 action send_goal /fibonacci example_interfaces/action/Fibonacci "{order: 5}" --feedback` |
-| **`ros2 param set <node> <parameter_name> <value>`**    | 支援動態修改 Node 的設定（如：速限）且不需重啟                     | `ros2 param set /agv_A_node max_speed 0.5`                                                     |
-| **`ros2 bag record <topic>`**        | 支援存檔，供日後回放分析或除錯                                |                                                                                                |
+| 常用指令                                                 | 描述                                             | 範例                                                                                              |
+|:---------------------------------------------------- |:---------------------------------------------- |:----------------------------------------------------------------------------------------------- |
+| **`ros2 node list`**                                 | 顯示目前所有可用的 Node (如雷達節點、)                            |                                                                                                 |
+| **`ros2 topic list`**                                | 顯示目前所有可用的 Topic                                |                                                                                                 |
+| **`ros2 service list`**                              | 顯示目前所有可用的 Service                              |                                                                                                 |
+| **`ros2 action list`**                               | 顯示目前所有可用的 Action                               |                                                                                                 |
+| **`ros2 node info <node>`**                          | 查看指定 Node (功能單元) 提供哪些功能 (Topic, Service, Action) | `ros2 node info /agv_A_node`                                                                    |
+| **`ros2 topic echo <topic>`**                        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）    | `ros2 topic echo /agv_A_coord`                                                                  |
+| **`ros2 topic hz <topic>`**                          | 檢查資料的更新頻率                                      | `ros2 topic hz /agv_A_coord`                                                                    |
+| **`ros2 topic pub <topic> <type>`**                  | **(發布) 模擬發送**：持續發送資料 (預設 1Hz)                  | `ros2 topic pub /agv_A_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`                |
+| **`ros2 topic pub --once <topic> <type>`**           | **(發布) 模擬發送**：發送一筆資料後立即停止                      | `ros2 topic pub --once /agv_A_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`         |
+| **`ros2 service call <srv> <type>`**                 | 要求特定 Node (載具)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /agv_A/reboot std_srvs/srv/Trigger`                                          |
+| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                           | `ros2 action send_goal /fibonacci example_interfaces/action/Fibonacci "{order: 10}" --feedback` |
+| **`ros2 param set <node> <parameter_name> <value>`** | 支援動態修改 Node 的設定（如：速限）且不需重啟                     | `ros2 param set /agv_A_node max_speed 0.5`                                                      |
+| **`ros2 bag record <topic>`**                        | 支援存檔，供日後回放分析或除錯                                |                                                                                                 |
 
 > [!TIP]
 > 若執行 `topic echo` 後，終端機會進入「掛機監聽狀態」。只要發布端（載具）持續發送新資料，您的畫面就會不斷捲動顯示最新內容，直到您按下 `Ctrl + C` 停止為止。
