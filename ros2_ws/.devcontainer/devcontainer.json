@@ -11,6 +11,22 @@
             ]
         }
     },
+    /* 多機測試 (如：在不同 Mac 下的虛擬機建立溝通)
+    // 透過 appPort 映射連接埠，讓 Mac 與 Mac 能透過實體 IP 存取 虛擬機 (Docker) 內的服務
+    "appPort": [
+        "11811:11811/udp" // ROS2 Discovery Server 預設通訊埠 11811 (Mac 對外 port: Docker port)
+    ],
+    "runArgs": [
+        "--ipc=host" // 允許容器共享主機 IPC 空間。這是 ROS 2 實現「零拷貝 (Zero-Copy)」通訊的核心設定，能極大化單機內節點間傳輸大數據 (如影像、點雲) 的效能。
+    ],
+    "containerEnv": {
+        "ROS_DOMAIN_ID": "42", // 確保兩台電腦的 Domain ID 一致 (建議設為 0-101 之間)
+        // Discovery Server 的連線地址
+        // 正式測試時，請將 192.168.1.x 改為擔任 Server 那台 Mac 的實體 IP
+        // 作為 Server 的 Mac A：請設為 127.0.0.1:11811
+        // 作為 Client 的 Mac B：請設為 192.168.1.154:11811
+        "ROS_DISCOVERY_SERVER": "127.0.0.1:11811"
+    },*/
     "remoteUser": "root",
     "postCreateCommand": "apt-get update && apt-get install -y python3-pip python3-colcon-common-extensions ros-humble-example-interfaces ros-humble-demo-nodes-cpp fastdds-tools && rosdep update && echo \"source /opt/ros/humble/setup.bash\" >> /root/.bashrc && echo \"source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash\" >> /root/.bashrc"
 }

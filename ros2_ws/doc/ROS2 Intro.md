@@ -55,7 +55,26 @@
   
   * 即使中控伺服器突然**當機或是網路斷線**，載具 A 和 B 之間還是可以持續溝通，確保不會撞在一起。
 
-### 2.3 環境隔離 (Domain ID)
+### 2.3 節點發現機制 (Discovery Mechanism)
+
+ROS 2 節點要通訊，必須先在網路中「找到彼此」。這由底層的 **DDS** 負責，主要有以下三種模式：
+
+| 模式                        | 技術基礎              | 運作方式                    | 優點               | 應用場景                      | 限制                            |
+|:------------------------- |:----------------- |:----------------------- |:---------------- |:------------------------- |:----------------------------- |
+| **Simple Discovery (預設)** | **UDP Multicast** | 節點一啟動就在網路中「大喊」自己的名字與 IP | 完全免設定，開箱即用       | 單機開發、小型實體區域網路             | 無法穿透 **Docker for Mac** 虛擬機網橋 |
+| **Discovery Server (進階)** | **UDP Unicast**   | 指定一台 Server 登記並查詢名單     | 頻寬極低、穩定，可穿透虛擬機隔離 | **跨主機 Docker 測試**、大型機器人車隊 | 需要指定 Server 的實體 IP            |
+| **Static Discovery (硬核)** | **XML 配置表**       | 手動寫死所有節點的 IP 名單         | 安全性最高，完全無偵測流量    | 極端安全、不允許動態掃描環境            | 維護困難，新增節點需改動所有設備              |
+
+#### 跨主機 ROS 2 Docker 通訊配置總結 (Discovery Server 方案)
+
+| 階段                      | 執行/設定位置                               | 核心動作與指令                                                                     | 目的與作用                                                                                     |
+|:----------------------- |:------------------------------------- |:--------------------------------------------------------------------------- |:----------------------------------------------------------------------------------------- |
+| **1. 環境準備**             | 兩台 Mac 的 `devcontainer.json`          | 1. 新增 `"appPort": ["11811:11811/udp"]`<br>2. 新增 `"runArgs": ["--ipc=host"]` | 讓封包能穿透 Mac 實體網卡進到虛擬機，並優化單機內通訊效能。                                                          |
+| **2. 建立發現(discover)中心** | 作為 discover server 的 **Mac A** 虛擬機終端機 | `fastdds discovery -i 0 -l 192.168.1.154 -p 11811`                          | 啟動中心管理，記錄並分發所有節點位置。(啟用後會掛載監，請使用獨立視窗執行)                                                    |
+| **3. 連線配置**             | **兩台** 虛擬機終端機                         | `export ROS_DISCOVERY_SERVER="<Mac_A_IP>:11811"`                            | 切換 ROS2 從 multicast 模式改為 unicast 模式。*(若已在 devcontainer.json 設置 containerEnv 自動化，則可略過此步驟)* |
+| **4. 驗證通訊**             | 兩台虛擬機終端機                              | `ros2 run demo_nodes_cpp talker / listener`                                 | 驗證兩台 Mac 的 ROS2 節點是否能成功交換訊息。                                                              |
+
+### 2.4 環境隔離 (Domain ID)
 
 假設工廠有兩條獨立生產線，雖然它們在同一個 Wi-Fi 實體網路下：
 
@@ -66,14 +85,14 @@
   * 即使這 8 台載具在同一條實體軌道上穿梭，生產線 1 的載具**完全不會接收到**生產線 2 的任何感測器數據或指令。
   * 像無線對講機切換到不同頻道，確保通訊不會互相干擾，也避免了無效數據佔用單一車輛的運算資源。這對大規模部署非常重要。
 
-### 2.4 QoS (服務品質，Quality of Service)
+### 2.5 QoS (服務品質，Quality of Service)
 
 傳統 TCP 網路一旦中斷，系統常會因試圖補傳資料而卡住。ROS 2 則透過 QoS 來定義「資料要如何被傳送」，讓通訊更具彈性。
 
 - QoS 不是單一參數，而是一組 **QoS Profile**（設定組合）。
 - 底層透過 **UDP Multicast** 換取傳輸極速，會根據資料的重要程度，選擇最適合的傳輸方式，決定訊息的品質。
 
-#### 2.4.1 QoS Profile 實務常用設定
+#### 2.5.1 QoS Profile 實務常用設定
 
 | 資料類型        | 應用範例              | QoS Profile (Reliability + History) | 核心特性                                     |
 | ----------- | ----------------- | ----------------------------------- | ---------------------------------------- |
@@ -202,21 +221,21 @@
 
 ## 4. ROS 2 常用 CLI 指令
 
-| 常用指令                                                 | 描述                                             | 範例                                                                                              |
-|:---------------------------------------------------- |:---------------------------------------------- |:----------------------------------------------------------------------------------------------- |
-| **`ros2 node list`**                                 | 顯示目前所有可用的 Node (如座標節點、馬達節點)             |                                                                                                 |
-| **`ros2 topic list`**                                | 顯示目前所有可用的 Topic                                |                                                                                                 |
-| **`ros2 service list`**                              | 顯示目前所有可用的 Service                              |                                                                                                 |
-| **`ros2 action list`**                               | 顯示目前所有可用的 Action                               |                                                                                                 |
+| 常用指令                                                 | 描述                                               | 範例                                                                                              |
+|:---------------------------------------------------- |:------------------------------------------------ |:----------------------------------------------------------------------------------------------- |
+| **`ros2 node list`**                                 | 顯示目前所有可用的 Node (如座標節點、馬達節點)                      |                                                                                                 |
+| **`ros2 topic list`**                                | 顯示目前所有可用的 Topic                                  |                                                                                                 |
+| **`ros2 service list`**                              | 顯示目前所有可用的 Service                                |                                                                                                 |
+| **`ros2 action list`**                               | 顯示目前所有可用的 Action                                 |                                                                                                 |
 | **`ros2 node info <node>`**                          | 查看指定 Node (功能單元) 提供哪些功能 (Topic, Service, Action) | `ros2 node info /node_coord`                                                                    |
-| **`ros2 topic echo <topic>`**                        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）    | `ros2 topic echo /node_coord`                                                                  |
-| **`ros2 topic hz <topic>`**                          | 檢查資料的更新頻率                                      | `ros2 topic hz /node_coord`                                                                    |
-| **`ros2 topic pub <topic> <type>`**                  | **(發布) 模擬發送**：持續發送資料 (預設 1Hz)                  | `ros2 topic pub /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`                |
-| **`ros2 topic pub --once <topic> <type>`**           | **(發布) 模擬發送**：發送一筆資料後立即停止                      | `ros2 topic pub --once /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`         |
-| **`ros2 service call <srv> <type>`**                 | 要求特定 Node (功能單元)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /node_coord std_srvs/srv/Trigger`                                          |
-| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                           | `ros2 action send_goal /plan_path example_interfaces/action/Fibonacci "{order: 10}" --feedback` |
-| **`ros2 param set <node> <parameter_name> <value>`** | 支援動態修改 Node 的設定（如：速限）且不需重啟                     | `ros2 param set /node_coord max_speed 0.5`                                                      |
-| **`ros2 bag record <topic>`**                        | 支援存檔，供日後回放分析或除錯                                |                                                                                                 |
+| **`ros2 topic echo <topic>`**                        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）      | `ros2 topic echo /node_coord`                                                                   |
+| **`ros2 topic hz <topic>`**                          | 檢查資料的更新頻率                                        | `ros2 topic hz /node_coord`                                                                     |
+| **`ros2 topic pub <topic> <type>`**                  | **(發布) 模擬發送**：持續發送資料 (預設 1Hz)                    | `ros2 topic pub /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`                 |
+| **`ros2 topic pub --once <topic> <type>`**           | **(發布) 模擬發送**：發送一筆資料後立即停止                        | `ros2 topic pub --once /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`          |
+| **`ros2 service call <srv> <type>`**                 | 要求特定 Node (功能單元)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /node_coord std_srvs/srv/Trigger`                                            |
+| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                             | `ros2 action send_goal /plan_path example_interfaces/action/Fibonacci "{order: 10}" --feedback` |
+| **`ros2 param set <node> <parameter_name> <value>`** | 支援動態修改 Node 的設定（如：速限）且不需重啟                       | `ros2 param set /node_coord max_speed 0.5`                                                      |
+| **`ros2 bag record <topic>`**                        | 支援存檔，供日後回放分析或除錯                                  |                                                                                                 |
 
 > [!TIP]
 > 若執行 `topic echo` 後，終端機會進入「掛機監聽狀態」。只要發布端 (Node) 持續發送新資料，您的畫面就會不斷捲動顯示最新內容，直到您按下 `Ctrl + C` 停止為止。
