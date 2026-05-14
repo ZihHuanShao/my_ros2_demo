@@ -12,6 +12,8 @@
 
   <!-- 軟體包依賴：此專案需要用到 ROS 2 的 C++ 核心庫 -->
   <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>rclcpp_action</depend>
   <depend>example_interfaces</depend>
 

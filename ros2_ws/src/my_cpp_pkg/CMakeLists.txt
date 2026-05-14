@@ -6,41 +6,40 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # 尋找必要的功能包
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(example_interfaces REQUIRED)
+find_package(ament_cmake REQUIRED)  # ament_cmake: ROS 2 的建置系統核心
+find_package(rclcpp REQUIRED) # rclcpp: ROS 2 的 C++ 客戶端函式庫，提供 Node, Topic, Service 等核心功能
+find_package(geometry_msgs REQUIRED)  # geometry_msgs: 提供幾何原始型別訊息（如 Point, Pose），用於座標傳輸
+find_package(std_srvs REQUIRED) # std_srvs: 提供標準服務型別（如 Trigger），用於簡單的開關或觸發指令
+find_package(rclcpp_action REQUIRED)  # rclcpp_action: 提供 Action 客戶端與伺服器端的 C++ 支援
+find_package(example_interfaces REQUIRED) # example_interfaces: 包含範例用的 Action 定義（如專案中使用的 Fibonacci）
 
-# 建立載具 A 發布者執行檔 (agv_A_node)
-add_executable(agv_A_node src/agv_A_node.cpp)
+# 建立定位管理執行檔 (node_coord)
+# 負責處理 AGV 的全域位置資訊發布，並提供路徑規劃的 Action 服務
+add_executable(node_coord src/node_coord.cpp)
 ament_target_dependencies(
-  agv_A_node 
-  rclcpp 
-  std_msgs 
-  geometry_msgs 
-  std_srvs
-  rclcpp_action
-  example_interfaces
+  node_coord            # 目標執行檔
+  rclcpp                # 核心通訊
+  geometry_msgs         # 座標訊息
+  std_srvs              # 重置服務
+  rclcpp_action         # Action 框架
+  example_interfaces    # Fibonacci 介面
 )
 
-# 建立載具 B 訂閱者執行檔 (agv_B_node)
-add_executable(agv_B_node src/agv_B_node.cpp)
+# 建立馬達控制執行檔 (node_motor)
+# 負責直接對接馬達硬體狀態（RPM, 溫度），並提供急停（Brake）服務
+add_executable(node_motor src/node_motor.cpp)
 ament_target_dependencies(
-  agv_B_node 
-  rclcpp 
-  std_msgs 
-  geometry_msgs 
-  std_srvs
+  node_motor            # 目標執行檔
+  rclcpp                # 核心通訊
+  geometry_msgs         # 馬達狀態訊息
+  std_srvs              # 急停服務
 )
 
 # 安裝指令：將編譯好的執行檔放到 install 目錄，這樣 ros2 run 才能找到它
 install(
   TARGETS
-  agv_A_node
-  agv_B_node
+  node_coord
+  node_motor
   DESTINATION lib/${PROJECT_NAME}
 )
 

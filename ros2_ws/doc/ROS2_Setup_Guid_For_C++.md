@@ -258,6 +258,19 @@ cd /workspaces/ros2_ws
 ros2 run my_cpp_pkg hello_exe
 ```
 
+# 進階技巧：自定義命名空間 (解決不同裝置下的同名 Node)，或是重命名節點
+```bash
+cd /workspaces/ros2_ws
+ros2 run my_cpp_pkg node_coord --ros-args -r __node:=main_brain -r __ns:=/agv_1
+# --ros-args: 後面的所有參數都是要給 ROS 2 底層系統的 
+# -r： 全稱是 Remapping（重新映射）。它用來告訴系統：我要修改某個東西的「名字」或「路徑」。
+#  __node:=main_brain: 自訂節點名稱。會把程式中的預設節點名稱 "node_coord" 重新命名為 "main_brain"。
+# __ns:=/agv_1:
+# __ns：這是 ROS 2 的保留關鍵字，代表 Namespace（命名空間）。
+# :=：這不是單純的等號，而是 ROS 的重映射運算子，意思是「把左邊的東西對應到右邊的名稱」。
+# /agv_1：自訂的命名空間路徑。注意，通常會以 / 開頭。
+```
+
 ## 修正建議與注意事項
 
 - **路徑一致性**

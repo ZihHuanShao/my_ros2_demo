@@ -159,9 +159,8 @@
 
 載具內部的功能模組都視為一個 Node。
 
-* **`lidar_node`**：負責處理雷達數據。
-* **`motor_node`**：負責控制輪子轉動。
-* **`navigation_node`**：負責計算行駛路徑。
+* **`node_coord`**：負責計算並發布載具位置與座標資訊。
+* **`node_motor`**：負責接收移動指令並控制馬達運轉。
 
 ##### Topic (主題)
 
@@ -205,21 +204,21 @@
 
 | 常用指令                                                 | 描述                                             | 範例                                                                                              |
 |:---------------------------------------------------- |:---------------------------------------------- |:----------------------------------------------------------------------------------------------- |
-| **`ros2 node list`**                                 | 顯示目前所有可用的 Node (如雷達節點、)                            |                                                                                                 |
+| **`ros2 node list`**                                 | 顯示目前所有可用的 Node (如座標節點、馬達節點)             |                                                                                                 |
 | **`ros2 topic list`**                                | 顯示目前所有可用的 Topic                                |                                                                                                 |
 | **`ros2 service list`**                              | 顯示目前所有可用的 Service                              |                                                                                                 |
 | **`ros2 action list`**                               | 顯示目前所有可用的 Action                               |                                                                                                 |
-| **`ros2 node info <node>`**                          | 查看指定 Node (功能單元) 提供哪些功能 (Topic, Service, Action) | `ros2 node info /agv_A_node`                                                                    |
-| **`ros2 topic echo <topic>`**                        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）    | `ros2 topic echo /agv_A_coord`                                                                  |
-| **`ros2 topic hz <topic>`**                          | 檢查資料的更新頻率                                      | `ros2 topic hz /agv_A_coord`                                                                    |
-| **`ros2 topic pub <topic> <type>`**                  | **(發布) 模擬發送**：持續發送資料 (預設 1Hz)                  | `ros2 topic pub /agv_A_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`                |
-| **`ros2 topic pub --once <topic> <type>`**           | **(發布) 模擬發送**：發送一筆資料後立即停止                      | `ros2 topic pub --once /agv_A_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`         |
-| **`ros2 service call <srv> <type>`**                 | 要求特定 Node (載具)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /agv_A/reboot std_srvs/srv/Trigger`                                          |
-| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                           | `ros2 action send_goal /fibonacci example_interfaces/action/Fibonacci "{order: 10}" --feedback` |
-| **`ros2 param set <node> <parameter_name> <value>`** | 支援動態修改 Node 的設定（如：速限）且不需重啟                     | `ros2 param set /agv_A_node max_speed 0.5`                                                      |
+| **`ros2 node info <node>`**                          | 查看指定 Node (功能單元) 提供哪些功能 (Topic, Service, Action) | `ros2 node info /node_coord`                                                                    |
+| **`ros2 topic echo <topic>`**                        | **(訂閱) 監聽數據**：持續接收並印出該 Topic 的即時資料串流（常用於除錯）    | `ros2 topic echo /node_coord`                                                                  |
+| **`ros2 topic hz <topic>`**                          | 檢查資料的更新頻率                                      | `ros2 topic hz /node_coord`                                                                    |
+| **`ros2 topic pub <topic> <type>`**                  | **(發布) 模擬發送**：持續發送資料 (預設 1Hz)                  | `ros2 topic pub /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`                |
+| **`ros2 topic pub --once <topic> <type>`**           | **(發布) 模擬發送**：發送一筆資料後立即停止                      | `ros2 topic pub --once /node_coord geometry_msgs/msg/Point "{x: 999, y: 999, z: 0.0}"`         |
+| **`ros2 service call <srv> <type>`**                 | 要求特定 Node (功能單元)執行單次指令 (如：強制停車、重啟)               | `ros2 service call /node_coord std_srvs/srv/Trigger`                                          |
+| **`ros2 action send_goal <action> <type> "<goal>"`** | 派發 Node 執行長任務並持續觀察進度                           | `ros2 action send_goal /plan_path example_interfaces/action/Fibonacci "{order: 10}" --feedback` |
+| **`ros2 param set <node> <parameter_name> <value>`** | 支援動態修改 Node 的設定（如：速限）且不需重啟                     | `ros2 param set /node_coord max_speed 0.5`                                                      |
 | **`ros2 bag record <topic>`**                        | 支援存檔，供日後回放分析或除錯                                |                                                                                                 |
 
 > [!TIP]
-> 若執行 `topic echo` 後，終端機會進入「掛機監聽狀態」。只要發布端（載具）持續發送新資料，您的畫面就會不斷捲動顯示最新內容，直到您按下 `Ctrl + C` 停止為止。
+> 若執行 `topic echo` 後，終端機會進入「掛機監聽狀態」。只要發布端 (Node) 持續發送新資料，您的畫面就會不斷捲動顯示最新內容，直到您按下 `Ctrl + C` 停止為止。
 
 ---
