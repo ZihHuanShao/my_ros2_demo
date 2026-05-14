@@ -42,19 +42,19 @@ public:
       std::bind(&AGV_Coord_Node::handle_accepted, this, std::placeholders::_1)
     );
 
-    RCLCPP_INFO(this->get_logger(), "定位管理節點 (node_coord) 已啟動...");
+    RCLCPP_INFO(this->get_logger(), "定位節點 (node_coord) 已啟動...");
   }
 
 private:
   void motor_callback(const geometry_msgs::msg::Point::SharedPtr msg) const {
-    RCLCPP_INFO(this->get_logger(), "接收到馬達回傳: [左輪轉速: %.2f, 右輪轉速: %.2f]", msg->x, msg->y);
+    RCLCPP_INFO(this->get_logger(), "[topic/motor_status] 接收馬達狀態: [左輪轉速: %.2f, 右輪轉速: %.2f]", msg->x, msg->y);
   }
 
   void handle_reset(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
     (void)request;
-    RCLCPP_INFO(this->get_logger(), "執行座標重置程序...");
+    RCLCPP_INFO(this->get_logger(), "[service/reset_pose] 執行座標重置程序...");
     count_ = 0;
     response->success = true;
     response->message = "座標與計數器已歸零";
@@ -66,7 +66,7 @@ private:
     message.y = dis_(gen_);
     message.z = 0.0;
 
-    RCLCPP_INFO(this->get_logger(), "目前發布座標: [x: %.2f, y: %.2f], 累積里程計數: %zu", message.x, message.y, count_++);
+    RCLCPP_INFO(this->get_logger(), "[topic/location] 發佈當前座標: [x: %.2f, y: %.2f], 累積里程計數: %zu", message.x, message.y, count_++);
     publisher_->publish(message);
   }
 
@@ -74,7 +74,7 @@ private:
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Fibonacci::Goal> goal)
   {
-    RCLCPP_INFO(this->get_logger(), "收到路徑規劃請求: 預計產生 %d 個路點", goal->order);
+    RCLCPP_INFO(this->get_logger(), "[action/plan_path] 收到路徑規劃請求: 預計產生 %d 個路點", goal->order);
     (void)uuid;
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
@@ -82,7 +82,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandleFibonacci> goal_handle)
   {
-    RCLCPP_INFO(this->get_logger(), "收到取消 Action 的請求");
+    RCLCPP_INFO(this->get_logger(), "[action/plan_path] 收到取消 Action 的請求");
     (void)goal_handle;
     return rclcpp_action::CancelResponse::ACCEPT;
   }
@@ -94,7 +94,7 @@ private:
 
   void execute_action(const std::shared_ptr<GoalHandleFibonacci> goal_handle)
   {
-    RCLCPP_INFO(this->get_logger(), "開始計算路徑點...");
+    RCLCPP_INFO(this->get_logger(), "[action/plan_path] 開始計算路徑點...");
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<Fibonacci::Feedback>();
     auto & sequence = feedback->sequence;
@@ -115,7 +115,7 @@ private:
 
     result->sequence = sequence;
     goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "路徑計算完成");
+    RCLCPP_INFO(this->get_logger(), "[action/plan_path] 路徑計算完成");
   }
 
   rclcpp::TimerBase::SharedPtr timer_;                                      

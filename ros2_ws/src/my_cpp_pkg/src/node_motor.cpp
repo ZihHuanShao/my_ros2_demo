@@ -22,19 +22,19 @@ public:
       "agv/service/brake",
       std::bind(&AGV_Motor_Node::handle_brake, this, std::placeholders::_1, std::placeholders::_2));
 
-    RCLCPP_INFO(this->get_logger(), "馬達控制節點 (node_motor) 已啟動...");
+    RCLCPP_INFO(this->get_logger(), "馬達節點 (node_motor) 已啟動...");
   }
 
 private:
   void location_callback(const geometry_msgs::msg::Point::SharedPtr msg) const {
-    RCLCPP_INFO(this->get_logger(), "接收到位置資訊: [x: %.2f, y: %.2f]", msg->x, msg->y);
+    RCLCPP_INFO(this->get_logger(), "[topic/location] 接收當前位置: [x: %.2f, y: %.2f]", msg->x, msg->y);
   }
 
   void handle_brake(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
     (void)request;
-    RCLCPP_INFO(this->get_logger(), "收到急停指令！馬達轉速歸零...");
+    RCLCPP_INFO(this->get_logger(), "[service/brake] 收到煞車指令！馬達轉速歸零...");
     current_left_rpm_ = 0.0;
     current_right_rpm_ = 0.0;
     response->success = true;
@@ -55,7 +55,7 @@ private:
     }
     message.z = dis_temp_(gen_);
 
-    RCLCPP_INFO(this->get_logger(), "目前馬達狀態: [左輪RPM: %.2f, 右輪RPM: %.2f, 溫度: %.2f]", message.x, message.y, message.z);
+    RCLCPP_INFO(this->get_logger(), "[topic/motor_status] 發佈馬達狀態: [左輪RPM: %.2f, 右輪RPM: %.2f, 溫度: %.2f]", message.x, message.y, message.z);
     publisher_->publish(message);
   }
 
